@@ -1,13 +1,9 @@
 name: Deploy to Amazon ECS
 
 on:
-  push:
-    branches:
-      - cicd
   pull_request:
     branches:
-      - develop
-      - master
+      - tesnet
     types: [closed]
 
 env:
