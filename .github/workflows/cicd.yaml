@@ -69,6 +69,7 @@ jobs:
          kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_DEV }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_DEV }} ${{ secrets.K8s_DEPLOYMENT_NAME_DEV }}=${{ steps.image-name.outputs.image }} --local=false
 
       
+      
 #       - name: Configure env INDEXER_DB_REPLICAS
 #         uses: 'marvinpinto/action-inject-ssm-secrets@v1.2.1'
 #         with:
