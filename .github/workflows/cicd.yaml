@@ -37,12 +37,14 @@ jobs:
           role-duration-seconds: 1200
      
       - name: Configure env INDEXER_DB_CONNECTION
+        if: ${{  github.event_name == 'pull_request' && (github.ref != 'refs/heads/cicd' || github.ref != 'refs/heads/stable' || github.ref != 'refs/heads/master' ) }}      
         uses: 'marvinpinto/action-inject-ssm-secrets@v1.2.1'
         with:
           ssm_parameter: '/mynearwallet/indexer_db_connection'
           env_variable_name: 'INDEXER_DB_CONNECTION'
 
       - name: prepare env
+        if: ${{  github.event_name == 'pull_request' && (github.ref != 'refs/heads/cicd' || github.ref != 'refs/heads/stable' || github.ref != 'refs/heads/master' ) }}      
         run: cp .env.sample .env  && env | grep -i indexer >> .env 
   
       - name: Login to Amazon ECR
@@ -83,6 +85,17 @@ jobs:
           #need to add sts:TagSession to role
           role-skip-session-tagging: true
           role-duration-seconds: 1200
+
+      - name: Configure env INDEXER_DB_CONNECTION
+        if: ${{  github.event_name == 'pull_request' && (github.ref != 'refs/heads/cicd' || github.ref != 'refs/heads/stable' || github.ref != 'refs/heads/master' ) }}      
+        uses: 'marvinpinto/action-inject-ssm-secrets@v1.2.1'
+        with:
+          ssm_parameter: '/mynearwallet/indexer_db_connection'
+          env_variable_name: 'INDEXER_DB_CONNECTION'
+
+      - name: prepare env
+        if: ${{  github.event_name == 'pull_request' && (github.ref != 'refs/heads/cicd' || github.ref != 'refs/heads/stable' || github.ref != 'refs/heads/master' ) }}      
+        run: cp .env.sample .env  && env | grep -i indexer >> .env 
 
       - name: Login to Amazon ECR mainnet
         if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/stable') }}      
