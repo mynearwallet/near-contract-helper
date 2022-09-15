@@ -1,9 +1,6 @@
 name: Deploy to Amazon ECS
 
 on:
-  push:
-    branches:
-      - cicd
   pull_request:
     branches:
       - develop
@@ -59,6 +56,7 @@ jobs:
           echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           
       - name: Build and push docker image
+        if: ${{  github.event_name == 'pull_request' && (github.ref != 'refs/heads/cicd' || github.ref != 'refs/heads/stable' || github.ref != 'refs/heads/master' ) }}      
         run: |
           docker build -t ${{ steps.image-name.outputs.image }} .
           docker push ${{ steps.image-name.outputs.image }}     
@@ -81,12 +79,12 @@ jobs:
           role-skip-session-tagging: true
           role-duration-seconds: 1200
 
-      - name: Login to Amazon ECR
+      - name: Login to Amazon ECR mainnet
         if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/stable') }}      
         id: login-ecr-mainnet
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Set docker image name
+      - name: Set docker image name for mainnet
         if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/stable') }}      
         id: image-name-mainnet
         env:
@@ -96,7 +94,7 @@ jobs:
         run: |
           echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
-      - name: Build and push docker image
+      - name: Build and push docker image for mainnet
         if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/stable') }}      
         run: |
           docker build -t ${{ steps.image-name.outputs.image }} .
