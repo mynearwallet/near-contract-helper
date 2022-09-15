@@ -46,10 +46,12 @@ jobs:
         run: cp .env.sample .env  && env | grep -i indexer >> .env 
   
       - name: Login to Amazon ECR
+        if: ${{  github.event_name == 'pull_request' && (github.ref != 'refs/heads/cicd' || github.ref != 'refs/heads/stable' || github.ref != 'refs/heads/master' ) }}      
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Set docker image name
+        if: ${{  github.event_name == 'pull_request' && (github.ref != 'refs/heads/cicd' || github.ref != 'refs/heads/stable' || github.ref != 'refs/heads/master' ) }}      
         id: image-name
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -91,7 +93,7 @@ jobs:
         if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/stable') }}      
         id: image-name-mainnet
         env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REGISTRY: ${{ steps.login-ecr-mainnet.outputs.registry }}
           REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY_MAINNET }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
@@ -100,14 +102,14 @@ jobs:
       - name: Build and push docker image for mainnet
         if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/stable') }}      
         run: |
-          docker build -t ${{ steps.image-name.outputs.image }} .
-          docker push ${{ steps.image-name.outputs.image }}     
+          docker build -t ${{ steps.image-name-mainnet.outputs.image }} .
+          docker push ${{ steps.image-name-mainnet.outputs.image }}     
 
       - name: Deploy to EKS prod
         if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/stable') }}      
         run: |
          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_PROD_CLUSTER_NAME }}
-         kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_PROD }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_PROD }} ${{ secrets.K8s_DEPLOYMENT_NAME_DEV }}=${{ steps.image-name.outputs.image }} --local=false
+         kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_PROD }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_PROD }} ${{ secrets.K8s_DEPLOYMENT_NAME_DEV }}=${{ steps.image-name-mainnet.outputs.image }} --local=false
       
 #       - name: Configure env INDEXER_DB_REPLICAS
 #         uses: 'marvinpinto/action-inject-ssm-secrets@v1.2.1'
