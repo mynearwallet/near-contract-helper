@@ -63,12 +63,29 @@ jobs:
           docker build -t ${{ steps.image-name.outputs.image }} .
           docker push ${{ steps.image-name.outputs.image }}     
        
-      - name: Deploy to eks
+      - name: Deploy to EKS
+      - if: ${{ github.event_name == 'pull_request' }}      
         run: |
          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
          kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_DEV }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_DEV }} ${{ secrets.K8s_DEPLOYMENT_NAME_DEV }}=${{ steps.image-name.outputs.image }} --local=false
 
-      
+
+      - name: Configure AWS credentials for mainnet
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ASSUMED_ROLE_MAINNET }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          #need to add sts:TagSession to role
+          role-skip-session-tagging: true
+          role-duration-seconds: 1200
+
+      - name: Deploy to EKS prod
+      - if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/stable') }}      
+        run: |
+         aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_PROD_CLUSTER_NAME }}
+         kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_PROD }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_PROD }} ${{ secrets.K8s_DEPLOYMENT_NAME_DEV }}=${{ steps.image-name.outputs.image }} --local=false
       
 #       - name: Configure env INDEXER_DB_REPLICAS
 #         uses: 'marvinpinto/action-inject-ssm-secrets@v1.2.1'
