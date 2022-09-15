@@ -94,7 +94,7 @@ jobs:
         id: image-name-mainnet
         env:
           REGISTRY: ${{ steps.login-ecr-mainnet.outputs.registry }}
-          REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY_MAINNET }}
+          REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY_M }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
