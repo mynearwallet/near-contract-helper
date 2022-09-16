@@ -1,20 +1,21 @@
-name: Deploy to Amazon ECS
+name: Deploy to Amazon EKS
 
 on:
   push:
     branches:
-      - mainnet
+      - cicd
   pull_request:
     branches:
       - mainnet
+      - testnet
+      - develop
+      - master
     types: [opened, closed]
+
+
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}     # set this to your preferred AWS region, e.g. us-west-1
-  ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY_M }}
-  ECS_SERVICE: ${{ secrets.ECS_SERVICE_M }}  
-  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER_M }} 
-  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME_M }}
 
 
 jobs:
@@ -33,33 +34,24 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          role-to-assume: ${{ secrets.AWS_ASSUMED_ROLE_M }}
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ASSUMED_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
           #need to add sts:TagSession to role
           role-skip-session-tagging: true
           role-duration-seconds: 1200
-      
-      
-#       - name: Configure env INDEXER_DB_REPLICAS
-#         uses: 'marvinpinto/action-inject-ssm-secrets@v1.2.1'
-#         with:
-#           ssm_parameter: '/mynearwallet/indexer_db_urls_mainnet'
-#           env_variable_name: 'INDEXER_DB_REPLICAS'
-
-      - name: Configure env INDEXER_DB_CONNECTION
-        uses: 'marvinpinto/action-inject-ssm-secrets@v1.2.1'
-        with:
-          ssm_parameter: '/mynearwallet/indexer_db_connection_mainnet'
-          env_variable_name: 'INDEXER_DB_CONNECTION'
-
+ 
+ 
       - name: prepare env
+        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
         run: cp .env.sample .env  && env | grep -i indexer >> .env 
   
       - name: Login to Amazon ECR
+        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Set docker image name
+        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
         id: image-name
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -69,38 +61,56 @@ jobs:
           echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           
       - name: Build and push docker image
+        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
         run: |
           docker build -t ${{ steps.image-name.outputs.image }} .
-          docker push ${{ steps.image-name.outputs.image }}
-
-      - name: Download task definition
-        if: ${{ github.event.pull_request.merged }}       
+          docker push ${{ steps.image-name.outputs.image }}     
+       
+      - name: Deploy to EKS testnet
+        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
         run: |
-         aws ecs describe-task-definition --task-definition ${{ secrets.TASK_DEFINITION_M }} --region ${{ secrets.AWS_REGION }} --query taskDefinition | jq -r 'del(
-           .taskDefinitionArn,
-           .requiresAttributes,
-           .compatibilities,
-           .revision,
-           .status,
-           .registeredAt,
-           .registeredBy
-         )' > task-definition.json
+         aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
+         kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_DEV }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_DEV }} ${{ secrets.K8s_DEPLOYMENT_NAME_DEV }}=${{ steps.image-name.outputs.image }} --local=false
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        if: ${{ github.event.pull_request.merged }}
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
+      - name: Configure AWS credentials for mainnet
+        uses: aws-actions/configure-aws-credentials@v1
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
         with:
-          task-definition: task-definition.json
-          container-name: ${{ env.CONTAINER_NAME }}
-          image:  ${{ steps.image-name.outputs.image }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ASSUMED_ROLE_MAINNET }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          #need to add sts:TagSession to role
+          role-skip-session-tagging: true
+          role-duration-seconds: 1200
 
+      - name: prepare env mainnet
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        run: cp .env.sample .env  && env | grep -i indexer >> .env 
 
-      - name: Deploy Amazon ECS task definition
-        if: ${{ github.event.pull_request.merged }}       
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+      - name: Login to Amazon ECR mainnet
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        id: login-ecr-mainnet
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set docker image name for mainnet
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        id: image-name-mainnet
+        env:
+          REGISTRY: ${{ steps.login-ecr-mainnet.outputs.registry }}
+          REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY_M }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+
+      - name: Build and push docker image for mainnet
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        run: |
+          docker build -t ${{ steps.image-name-mainnet.outputs.image }} .
+          docker push ${{ steps.image-name-mainnet.outputs.image }}     
+
+      - name: Deploy to EKS prod
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        run: |
+         aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_PROD_CLUSTER_NAME }}
+         kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_PROD }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_PROD }} ${{ secrets.K8s_DEPLOYMENT_NAME_PROD }}=${{ steps.image-name-mainnet.outputs.image }} --local=false
