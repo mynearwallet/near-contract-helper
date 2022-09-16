@@ -39,11 +39,7 @@ jobs:
           #need to add sts:TagSession to role
           role-skip-session-tagging: true
           role-duration-seconds: 1200
- 
- 
-      - name: prepare env
-        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
-        run: cp .env.sample .env  && env | grep -i indexer >> .env 
+
   
       - name: Login to Amazon ECR
         if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
@@ -55,7 +51,7 @@ jobs:
         id: image-name
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY_M }}
+          REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
@@ -83,10 +79,6 @@ jobs:
           #need to add sts:TagSession to role
           role-skip-session-tagging: true
           role-duration-seconds: 1200
-
-      - name: prepare env mainnet
-        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
-        run: cp .env.sample .env  && env | grep -i indexer >> .env 
 
       - name: Login to Amazon ECR mainnet
         if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
