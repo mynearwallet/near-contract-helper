@@ -39,12 +39,6 @@ jobs:
           #need to add sts:TagSession to role
           role-skip-session-tagging: true
           role-duration-seconds: 1200
-          role-to-assume: ${{ secrets.AWS_ASSUMED_ROLE_M }}
-          aws-region: ${{ env.AWS_REGION }}
-          #need to add sts:TagSession to role
-          role-skip-session-tagging: true
-          role-duration-seconds: 1200
-      
  
  
       - name: prepare env
