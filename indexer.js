@@ -3,6 +3,7 @@ const Router = require('koa-router');
 const body = require('koa-json-body');
 const cors = require('@koa/cors');
 const koaBunyanLogger = require('koa-bunyan-logger');
+const blacklist = require('./src/middleware/black-list');
 
 const {
     findAccountsByPublicKey,
@@ -18,7 +19,6 @@ const {
 
 const app = new Koa();
 const router = new Router();
-
 // render.com passes requests through a proxy server; we need the source IPs to be accurate for `koa-ratelimit`
 app.proxy = true;
 
@@ -42,6 +42,7 @@ router.get('/account/:accountId/likelyNFTs', findLikelyNFTs);
 router.get('/account/:accountId/likelyTokensFromBlock', findLikelyTokensFromBlock);
 router.get('/account/:accountId/likelyNFTsFromBlock', findLikelyNFTsFromBlock);
 router.get('/stakingPools', findStakingPools);
+router.get('/tokens/blackList', blacklist.getBlacklist);
 
 app
     .use(router.routes())
