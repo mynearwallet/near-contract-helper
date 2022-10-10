@@ -67,7 +67,7 @@ jobs:
 
       - name: Configure AWS credentials for mainnet
         uses: aws-actions/configure-aws-credentials@v1
-        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}   
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
