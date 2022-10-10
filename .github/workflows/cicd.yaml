@@ -22,10 +22,22 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    environment: staging
+    environment:  ${{ steps.branch_check.outputs.env_name }}
 
     steps:
 
+      - name: Some check on branch
+        id: branch_check
+        run: |
+          echo "Running on branch ${{ github.ref }}"
+          if [ "${{ github.ref }}" = "refs/heads/mainnet" ]; then
+            echo "::set-output name=env_name::mainnet"
+          elif [ "${{ github.ref }}" = "refs/heads/testnet" ]; then
+            echo "::set-output name=env_name::testnet"
+          else
+             echo "::set-output name=env_name::staging"
+          fi 
+     
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -106,3 +118,4 @@ jobs:
         run: |
          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_PROD_CLUSTER_NAME }}
          kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_PROD }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_PROD }} ${{ secrets.K8s_DEPLOYMENT_NAME_PROD }}=${{ steps.image-name-mainnet.outputs.image }} --local=false
+  
