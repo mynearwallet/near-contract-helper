@@ -22,22 +22,10 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    environment:  ${{ steps.branch_check.outputs.env_name }}
+    environment: mainnet
 
     steps:
 
-      - name: Some check on branch
-        id: branch_check
-        run: |
-          echo "Running on branch ${{ github.ref }}"
-          if [ "${{ github.ref }}" = "refs/heads/mainnet" ]; then
-            echo "::set-output name=env_name::mainnet"
-          elif [ "${{ github.ref }}" = "refs/heads/testnet" ]; then
-            echo "::set-output name=env_name::testnet"
-          else
-             echo "::set-output name=env_name::staging"
-          fi 
-     
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -52,7 +40,6 @@ jobs:
           role-skip-session-tagging: true
           role-duration-seconds: 1200
 
-  
       - name: Login to Amazon ECR
         if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
         id: login-ecr
