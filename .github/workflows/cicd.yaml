@@ -3,12 +3,10 @@ name: Deploy to Amazon EKS
 on:
   push:
     branches:
-      - cicd
-  pull_request:
-    branches:
       - mainnet
       - testnet
-      - develop
+  pull_request:
+    branches:
       - master
     types: [opened, closed]
 
@@ -22,7 +20,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    environment: staging
+    environment: mainnet
 
     steps:
 
@@ -40,14 +38,13 @@ jobs:
           role-skip-session-tagging: true
           role-duration-seconds: 1200
 
-  
       - name: Login to Amazon ECR
-        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/testnet' ) }}      
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Set docker image name
-        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/testnet' ) }}      
         id: image-name
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -57,20 +54,20 @@ jobs:
           echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           
       - name: Build and push docker image
-        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/testnet' ) }}       
         run: |
           docker build -t ${{ steps.image-name.outputs.image }} .
           docker push ${{ steps.image-name.outputs.image }}     
        
       - name: Deploy to EKS testnet
-        if: ${{  github.event_name == 'pull_request' && ( github.ref != 'refs/heads/mainnet' || github.ref != 'refs/heads/master' ) }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/testnet' ) }}      
         run: |
          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
          kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_DEV }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_DEV }} ${{ secrets.K8s_DEPLOYMENT_NAME_DEV }}=${{ steps.image-name.outputs.image }} --local=false
 
       - name: Configure AWS credentials for mainnet
         uses: aws-actions/configure-aws-credentials@v1
-        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}   
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -81,12 +78,12 @@ jobs:
           role-duration-seconds: 1200
 
       - name: Login to Amazon ECR mainnet
-        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}        
         id: login-ecr-mainnet
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Set docker image name for mainnet
-        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}         
         id: image-name-mainnet
         env:
           REGISTRY: ${{ steps.login-ecr-mainnet.outputs.registry }}
@@ -96,13 +93,14 @@ jobs:
           echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
       - name: Build and push docker image for mainnet
-        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}         
         run: |
           docker build -t ${{ steps.image-name-mainnet.outputs.image }} .
           docker push ${{ steps.image-name-mainnet.outputs.image }}     
 
       - name: Deploy to EKS prod
-        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.ref == 'refs/heads/cicd' || github.ref == 'refs/heads/mainnet') }}      
+        if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}         
         run: |
          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_PROD_CLUSTER_NAME }}
          kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_PROD }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_PROD }} ${{ secrets.K8s_DEPLOYMENT_NAME_PROD }}=${{ steps.image-name-mainnet.outputs.image }} --local=false
+  
