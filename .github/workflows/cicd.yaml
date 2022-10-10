@@ -64,7 +64,6 @@ jobs:
         run: |
          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
          kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_DEV }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_DEV }} ${{ secrets.K8s_DEPLOYMENT_NAME_DEV }}=${{ steps.image-name.outputs.image }} --local=false
-
       - name: Configure AWS credentials for mainnet
         uses: aws-actions/configure-aws-credentials@v1
         if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}   
@@ -91,16 +90,13 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "::set-output name=image::$REGISTRY/$REPOSITORY:$IMAGE_TAG"
-
       - name: Build and push docker image for mainnet
         if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}         
         run: |
           docker build -t ${{ steps.image-name-mainnet.outputs.image }} .
           docker push ${{ steps.image-name-mainnet.outputs.image }}     
-
       - name: Deploy to EKS prod
         if: ${{  github.event_name == 'push' && ( github.ref == 'refs/heads/mainnet' ) }}         
         run: |
          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.EKS_PROD_CLUSTER_NAME }}
          kubectl set image --namespace=${{ secrets.K8s_NAMESPACE_PROD }} deployment/${{ secrets.K8s_DEPLOYMENT_NAME_PROD }} ${{ secrets.K8s_DEPLOYMENT_NAME_PROD }}=${{ steps.image-name-mainnet.outputs.image }} --local=false
-  
