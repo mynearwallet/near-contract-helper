@@ -456,6 +456,9 @@ router.post('/account/validateSecurityCodeForTempAccount',
 const createFiatValueMiddleware = require('./src/middleware/fiat');
 router.get('/fiat', createFiatValueMiddleware());
 
+const { getFtMetadata } = require('./src/handlers/tokens');
+router.get('/tokens/ft_metadata/:tokens', getFtMetadata);
+
 if (process.env.NODE_ENV === 'development') {
     app.on(SERVER_EVENTS.SECURITY_CODE, ({ accountId, securityCode }) => {
         console.log(`Security code for ${accountId}: ${securityCode}`);
