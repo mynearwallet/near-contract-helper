@@ -53,4 +53,8 @@ app
     .use(router.routes())
     .use(router.allowedMethods());
 
-app.listen(process.env.PORT);
+if (!module.parent) {
+    app.listen(process.env.PORT);
+} else {
+    module.exports = app.listen(8888);
+}
