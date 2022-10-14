@@ -179,12 +179,18 @@ const withNear = async (ctx, next) => {
     await next();
 };
 
+const initDontCareAccount = async (ctx, next) => {
+    ctx.nearDontCareAccount = await ctx.near.account('dontcare');
+    await next();
+};
+
 module.exports = {
     parseSeedPhrase: require('near-seed-phrase').parseSeedPhrase,
     creatorKeyJson,
     creatorKeysJson,
     fundedCreatorKeyJson,
     withNear,
+    initDontCareAccount,
     checkAccountOwnership,
     createCheckAccountDoesNotExistMiddleware,
     accountAuthMiddleware,

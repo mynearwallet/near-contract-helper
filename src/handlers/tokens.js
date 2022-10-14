@@ -1,22 +1,31 @@
-async function getFtMetadata (ctx) {
-    const { tokens } = ctx.params;
-    const result = {};
-    try {
-        const tokensArray = JSON.parse(tokens);
-        const account = await ctx.near.account('dontcare');
-        await Promise.all(tokensArray.map(async (token) => {
-            result[token] = await account.viewFunction(
-                token,
-                'ft_metadata'
-            );
-        }));
+const Cache = require('node-cache');
 
+const cache = new Cache({ stdTTL: 60 * 60, checkperiod: 0, useClones: false });
+
+async function getFtMetadata (ctx) {
+    const { tokens } = ctx.query;
+    const result = {};
+
+    try {
+        const tokensArray = decodeURIComponent(tokens).split(',');
+        if (tokensArray[0].length) {
+            await Promise.allSettled(tokensArray.map(async (token) => {
+                if (!cache.has(token)) {
+                    const metadata = await ctx.nearDontCareAccount.viewFunction(
+                        token,
+                        'ft_metadata'
+                    );
+                    cache.set(token, metadata);
+                }
+
+                result[token] = cache.get(token);
+            }));
+        }
     } catch (err) {
         console.error(err);
     }
-    ctx.body = {
-        result: JSON.stringify(result)
-    };
+
+    ctx.body = JSON.stringify(result);
 }
 
 module.exports = {
