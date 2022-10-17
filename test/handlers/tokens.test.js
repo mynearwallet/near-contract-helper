@@ -23,7 +23,7 @@ describe('Tokens: GET /tokens/ft_metadata', () => {
             });
     });
 
-    it('Only unique tokens', async () => {      
+    it('Works with only unique tokens', async () => {      
         await request
             .get('/tokens/ft_metadata?tokens=wrap.testnet,usdc.testnet,usdc.testnet')
             .expect(200)
@@ -36,37 +36,38 @@ describe('Tokens: GET /tokens/ft_metadata', () => {
 
     // Add test cases for chunking
 
-    it('One of the tokens not exist', async () => {      
+    it('Returns nothing when one of the tokens not exist', async () => {      
         await request
             .get('/tokens/ft_metadata?tokens=wrap.testnet,usdc.1111')
-            .expect(400)
+            .expect(200)
             .expect((res) => {
+                console.warn('res.body= ', res.body);
                 assert(Object.keys(res.body).length === 0);
             });
     });
 
-    it('Null as an argument', async () => {
+    it('Returns nothing when null as an argument', async () => {
         await request
             .get('/tokens/ft_metadata?tokens=')
-            .expect(400)
+            .expect(200)
             .expect((res) => {
                 assert(Object.keys(res.body).length === 0);
             });
     });
 
-    it('Junk as an argument', async () => {      
+    it('Returns nothing when junk as an argument', async () => {      
         await request
             .get('/tokens/ft_metadata?tokens=sdasdasdasd')
-            .expect(400)
+            .expect(200)
             .expect((res) => {
                 assert(Object.keys(res.body).length === 0);
             });
     });
 
-    it('Parsing arguments error. URI malformed', async () => {      
+    it('Returns nothing when parsing arguments error. URI malformed', async () => {      
         await request
-            .get('/tokens/ft_metadata?tokens=!@#$$%')
-            .expect(400)
+            .get('/tokens/ft_metadata?tokens=%%%%%')
+            .expect(200)
             .expect((res) => {
                 assert(Object.keys(res.body).length === 0);
             });

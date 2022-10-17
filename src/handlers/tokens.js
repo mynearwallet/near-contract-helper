@@ -4,50 +4,60 @@ const CHUNK_SIZE = 25;
 
 const cache = new Cache({ stdTTL: 60 * 60, checkperiod: 0, useClones: false });
 
-async function getFtMetadata (ctx) {
-    const { tokens } = ctx.query;
-    let chunkedList = [];
-    
+function parseTokenNamesFromURI ({ tokens }) {
     try {
-        const tokensArray = decodeURIComponent(tokens).split(',');
-        if (!tokensArray[0].length) {
+        const tokensCollection = decodeURIComponent(tokens).split(',');
+        if (!tokensCollection[0].length) {
             throw new Error('Argument is not an array or being null');
         }
-        const uniqueTokensArray = [...new Set(tokensArray)];
-        for (let i = 0; i < uniqueTokensArray.length; i += CHUNK_SIZE) {
-            chunkedList.push(uniqueTokensArray.slice(i, i + CHUNK_SIZE));
-        }
+        return tokensCollection;
     } catch (err) {
         console.error(err);
-        ctx.status = 400;
-        ctx.body = {};
-        return;
+        return [];
     }
-    
+}
+
+function arrayPartition (tokens, size) {
+    let chunkedList = [];
+    for (let i = 0; i < tokens.length; i += size) {
+        chunkedList.push(tokens.slice(i, i + size));
+    }
+    return chunkedList;
+}
+
+async function execBatch (batches, callback) {
     const result = {};
     let hasError = false;
-    for (let i = 0; i < chunkedList.length; i++) {
-        await Promise.all(chunkedList[i].map(async (token) => {
-            if (!cache.has(token)) {
-                const metadata = await ctx.nearViewAccount.viewFunction(
-                    token,
-                    'ft_metadata'
-                );
-                cache.set(token, metadata);
-            }
-    
-            result[token] = cache.get(token);
+    for (let i = 0; i < batches.length; i++) {
+        await Promise.all(batches[i].map(async (token) => {
+            result[token] = await callback(token);
         })).catch((err) => {
             console.error(err);
             hasError = true;
         });
         if (hasError) {
-            ctx.status = 400;
-            ctx.body = {};
-            return;
+            return {};
         }
     }
+    return result;
+}
 
+async function getFtMetadata (ctx) {
+    const rawTokens = parseTokenNamesFromURI(ctx.query);
+    const uniqueTokens = [...new Set(rawTokens)];
+    const batches = arrayPartition(uniqueTokens, CHUNK_SIZE);
+    
+    const result = await execBatch(batches, async (token) => { 
+        if (!cache.has(token)) {
+            const metadata = await ctx.nearViewAccount.viewFunction(
+                token,
+                'ft_metadata'
+            );
+            cache.set(token, metadata);
+        }
+
+        return cache.get(token);
+    });
     ctx.body = result;
 }
 
