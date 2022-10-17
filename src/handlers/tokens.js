@@ -17,12 +17,12 @@ function parseTokenNamesFromURI ({ tokens }) {
     }
 }
 
-function arrayPartition (tokens, size) {
-    let chunkedList = [];
-    for (let i = 0; i < tokens.length; i += size) {
-        chunkedList.push(tokens.slice(i, i + size));
+function arrayPartition (array, size) {
+    let chunks = [];
+    for (let i = 0; i < array.length; i += size) {
+        chunks.push(array.slice(i, i + size));
     }
-    return chunkedList;
+    return chunks;
 }
 
 async function execBatch (batches, callback) {

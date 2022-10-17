@@ -13,7 +13,7 @@ describe('Tokens: GET /tokens/ft_metadata', () => {
 
     after(() => server.close());
 
-    it('Works as exprected', async () => {
+    it('Works as expected', async () => {
         await request
             .get('/tokens/ft_metadata?tokens=wrap.testnet,usdc.testnet') 
             .expect(200)
