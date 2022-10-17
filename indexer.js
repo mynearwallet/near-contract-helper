@@ -5,7 +5,7 @@ const cors = require('@koa/cors');
 const koaBunyanLogger = require('koa-bunyan-logger');
 const blacklist = require('./src/middleware/black-list');
 const { getFtMetadata } = require('./src/handlers/tokens');
-const { withNear, initDontCareAccount } = require('./src/middleware/near');
+const { withNear, initViewAccount } = require('./src/middleware/near');
 
 const {
     findAccountsByPublicKey,
@@ -49,12 +49,8 @@ router.get('/tokens/ft_metadata', getFtMetadata);
 
 app
     .use(withNear)
-    .use(initDontCareAccount)
+    .use(initViewAccount)
     .use(router.routes())
     .use(router.allowedMethods());
 
-if (!module.parent) {
-    app.listen(process.env.PORT);
-} else {
-    module.exports = app.listen(8888);
-}
+module.exports = app.listen(process.env.PORT);

@@ -179,8 +179,8 @@ const withNear = async (ctx, next) => {
     await next();
 };
 
-const initDontCareAccount = async (ctx, next) => {
-    ctx.nearDontCareAccount = await ctx.near.account('dontcare');
+const initViewAccount = async (ctx, next) => {
+    ctx.nearViewAccount = await ctx.near.account('dontcare');
     await next();
 };
 
@@ -190,7 +190,7 @@ module.exports = {
     creatorKeysJson,
     fundedCreatorKeyJson,
     withNear,
-    initDontCareAccount,
+    initViewAccount,
     checkAccountOwnership,
     createCheckAccountDoesNotExistMiddleware,
     accountAuthMiddleware,

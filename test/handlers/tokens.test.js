@@ -4,45 +4,71 @@ require('dotenv').config({ path: 'test/.env.test' });
 
 const server = require('../../indexer');
 
-describe('Tokens', () => {
+describe('Tokens: GET /tokens/ft_metadata', () => {
     let request;
 
-    before(async () => {
+    before(() => {
         request = supertest.agent(server);
     });
 
     after(() => server.close());
 
-    it('GET /tokens/ft_metadata works', async () => {
+    it('Works as exprected', async () => {
         await request
-            .get('/tokens/ft_metadata?tokens=wrap.testnet,usdc.testnet')
+            .get('/tokens/ft_metadata?tokens=wrap.testnet,usdc.testnet') 
             .expect(200)
             .expect((res) => {
-                console.log('res.body = ', res);
                 assert(!!res.body['usdc.testnet']);
                 assert(!!res.body['wrap.testnet']);
             });
+    });
 
+    it('Only unique tokens', async () => {      
+        await request
+            .get('/tokens/ft_metadata?tokens=wrap.testnet,usdc.testnet,usdc.testnet')
+            .expect(200)
+            .expect((res) => {
+                assert(!!res.body['usdc.testnet']);
+                assert(!!res.body['wrap.testnet']);
+                assert(Object.keys(res.body).length === 2);
+            });
+    });
+
+    // Add test cases for chunking
+
+    it('One of the tokens not exist', async () => {      
         await request
             .get('/tokens/ft_metadata?tokens=wrap.testnet,usdc.1111')
-            .expect(200)
-            .expect((res) => {
-                assert(!!res.body['wrap.testnet']);
-            });
-        
-        await request
-            .get('/tokens/ft_metadata?tokens=')
-            .expect(200)
-            .expect((res) => {
-                assert(Object.keys(res.body).length === 0);
-            });
-        
-        await request
-            .get('/tokens/ft_metadata?tokens=sdasdasdasd')
-            .expect(200)
+            .expect(400)
             .expect((res) => {
                 assert(Object.keys(res.body).length === 0);
             });
     });
 
+    it('Null as an argument', async () => {
+        await request
+            .get('/tokens/ft_metadata?tokens=')
+            .expect(400)
+            .expect((res) => {
+                assert(Object.keys(res.body).length === 0);
+            });
+    });
+
+    it('Junk as an argument', async () => {      
+        await request
+            .get('/tokens/ft_metadata?tokens=sdasdasdasd')
+            .expect(400)
+            .expect((res) => {
+                assert(Object.keys(res.body).length === 0);
+            });
+    });
+
+    it('Parsing arguments error. URI malformed', async () => {      
+        await request
+            .get('/tokens/ft_metadata?tokens=!@#$$%')
+            .expect(400)
+            .expect((res) => {
+                assert(Object.keys(res.body).length === 0);
+            });
+    });
 });
