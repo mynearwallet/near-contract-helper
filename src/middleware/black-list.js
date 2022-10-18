@@ -10,7 +10,6 @@ const env = {
 };
 
 function hasRequiredVariablesDefined() {
-    console.log(env);
     return env.apiKey && env.baseId && env.tableName;
 }
 
