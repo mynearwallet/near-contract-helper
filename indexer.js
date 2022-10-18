@@ -19,6 +19,8 @@ const {
     findAccountActivity,
 } = require('./src/middleware/indexer');
 
+
+
 const app = new Koa();
 const router = new Router();
 // render.com passes requests through a proxy server; we need the source IPs to be accurate for `koa-ratelimit`
@@ -44,7 +46,11 @@ router.get('/account/:accountId/likelyNFTs', findLikelyNFTs);
 router.get('/account/:accountId/likelyTokensFromBlock', findLikelyTokensFromBlock);
 router.get('/account/:accountId/likelyNFTsFromBlock', findLikelyNFTsFromBlock);
 router.get('/stakingPools', findStakingPools);
-router.get('/tokens/blackList', blacklist.getBlacklist);
+if (blacklist.getBlacklist) {
+    router.get('/tokens/blackList', blacklist.getBlacklist);
+} else {
+    console.log('Starting service without blacklist, as environment variables are not set');
+}
 router.get('/tokens/ft_metadata', getFtMetadata);
 
 app
