@@ -4,8 +4,6 @@ const body = require('koa-json-body');
 const cors = require('@koa/cors');
 const koaBunyanLogger = require('koa-bunyan-logger');
 const blacklist = require('./src/middleware/black-list');
-const { getFtMetadata } = require('./src/handlers/tokens');
-const { withNear, initViewAccount } = require('./src/middleware/near');
 
 const {
     findAccountsByPublicKey,
@@ -45,12 +43,9 @@ router.get('/account/:accountId/likelyTokensFromBlock', findLikelyTokensFromBloc
 router.get('/account/:accountId/likelyNFTsFromBlock', findLikelyNFTsFromBlock);
 router.get('/stakingPools', findStakingPools);
 router.get('/tokens/blackList', blacklist.getBlacklist);
-router.get('/tokens/ft_metadata', getFtMetadata);
 
 app
-    .use(withNear)
-    .use(initViewAccount)
     .use(router.routes())
     .use(router.allowedMethods());
 
-module.exports = app.listen(process.env.PORT);
+app.listen(process.env.PORT);
