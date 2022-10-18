@@ -144,7 +144,7 @@ const fundedCreatorKeyJson = (() => {
     }
 })();
 
-const DETERM_KEY_SEED = process.env.DETERM_KEY_SEED || creatorKeyJson.private_key;
+const DETERM_KEY_SEED = process.env.DETERM_KEY_SEED || (creatorKeyJson && creatorKeyJson.private_key);
 
 const keyStore = {
     async getKey(networkId, accountId) {
