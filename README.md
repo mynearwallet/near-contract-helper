@@ -94,4 +94,26 @@ Spies and fake timers provided with [sinon].
   - __tokens__ - array of tokens (contract names) separated by commas
 
 ```
-/tokens/ft_metadata?tokens=near.testnet,wrap.testnet,usdc.testnet...
+/tokens/ft_metadata?tokens=wrap.testnet,usdc.testnet
+
+{
+  'wrap.testnet': {
+    spec: 'ft-1.0.0',
+    name: 'Wrapped NEAR fungible token',
+    symbol: 'wNEAR',
+    icon: null,
+    reference: null,
+    reference_hash: null,
+    decimals: 24
+  },
+  'usdc.testnet': {
+    spec: 'ft-1.0.0',
+    name: 'USDC',
+    symbol: 'USDC',
+    icon: null,
+    reference: null,
+    reference_hash: null,
+    decimals: 6
+  }
+}
+```
