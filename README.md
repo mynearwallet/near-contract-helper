@@ -86,3 +86,12 @@ Spies and fake timers provided with [sinon].
 [chai]: https://www.chaijs.com/
 [chai-as-promised]: https://www.chaijs.com/plugins/chai-as-promised/
 [sinon]: https://sinonjs.org/
+
+## Indexer API Endpoints
+
+### Tokens
+* GET __/tokens/ft_metadata__ - get tokens metadata
+  - __tokens__ - array of tokens (contract names) separated by commas
+
+```
+/tokens/ft_metadata?tokens=near.testnet,wrap.testnet,usdc.testnet...
