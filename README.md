@@ -86,3 +86,34 @@ Spies and fake timers provided with [sinon].
 [chai]: https://www.chaijs.com/
 [chai-as-promised]: https://www.chaijs.com/plugins/chai-as-promised/
 [sinon]: https://sinonjs.org/
+
+## Indexer API Endpoints
+
+### Tokens
+* GET __/tokens/ft_metadata__ - get tokens metadata
+  - __tokens__ - array of tokens (contract names) separated by commas
+
+```
+/tokens/ft_metadata?tokens=wrap.testnet,usdc.testnet
+
+{
+  'wrap.testnet': {
+    spec: 'ft-1.0.0',
+    name: 'Wrapped NEAR fungible token',
+    symbol: 'wNEAR',
+    icon: null,
+    reference: null,
+    reference_hash: null,
+    decimals: 24
+  },
+  'usdc.testnet': {
+    spec: 'ft-1.0.0',
+    name: 'USDC',
+    symbol: 'USDC',
+    icon: null,
+    reference: null,
+    reference_hash: null,
+    decimals: 6
+  }
+}
+```
