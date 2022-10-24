@@ -4,6 +4,8 @@ const body = require('koa-json-body');
 const cors = require('@koa/cors');
 const koaBunyanLogger = require('koa-bunyan-logger');
 const blacklist = require('./src/middleware/black-list');
+const { getFtMetadata } = require('./src/handlers/tokens');
+const { withNear, initViewAccount } = require('./src/middleware/near');
 
 const {
     findAccountsByPublicKey,
@@ -16,6 +18,8 @@ const {
     findStakingPools,
     findAccountActivity,
 } = require('./src/middleware/indexer');
+
+
 
 const app = new Koa();
 const router = new Router();
@@ -42,10 +46,17 @@ router.get('/account/:accountId/likelyNFTs', findLikelyNFTs);
 router.get('/account/:accountId/likelyTokensFromBlock', findLikelyTokensFromBlock);
 router.get('/account/:accountId/likelyNFTsFromBlock', findLikelyNFTsFromBlock);
 router.get('/stakingPools', findStakingPools);
-router.get('/tokens/blackList', blacklist.getBlacklist);
+if (blacklist.getBlacklist) {
+    router.get('/tokens/blackList', blacklist.getBlacklist);
+} else {
+    console.log('Starting service without blacklist, as environment variables are not set');
+}
+router.get('/tokens/ft_metadata', getFtMetadata);
 
 app
+    .use(withNear)
+    .use(initViewAccount)
     .use(router.routes())
     .use(router.allowedMethods());
 
-app.listen(process.env.PORT);
+module.exports = app.listen(process.env.PORT);
